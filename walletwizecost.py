@@ -70,4 +70,4 @@ for name, (condition, cost) in st.session_state.cost_options.items():
     st.checkbox(name, value=eval(condition), disabled=True)
 
 cost_per_user = calculate_cost(num_users, st.session_state.cost_options)
-st.write(f"Cost per user: ${cost_per_user:.2f}")
+st.write(f"Cost per uuser: ${cost_per_user:.2f}")
