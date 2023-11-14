@@ -1,5 +1,5 @@
 import streamlit as st
-from your_script import calculate_operational_expenditures  # Ensure your script is properly imported
+
 
 
 def calculate_operational_expenditures(num_users, database_paid, jira_paid, dwolla_upgrade):
