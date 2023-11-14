@@ -30,52 +30,44 @@ def calculate_operational_expenditures(num_users, database_paid, jira_paid, dwol
     return cost_per_user
 
 
+def calculate_cost(num_users, cost_options):
+    total_cost = sum(cost for condition, cost in cost_options.values() if eval(condition))
+    return total_cost / num_users if num_users > 0 else 0
+
 st.title('Operational Expenditures Calculator')
 
 #Slider for number of users
 num_users = st.slider("Number of Users", 1, 20000, 1)
 
-#Existing Checkboxes
-database_paid = st.checkbox("Database Paid ($190/month)")
-jira_paid = st.checkbox("Jira Paid ($110/month)")
-dwolla_upgrade = st.checkbox("Upgrade Dwolla to Paid ($200/month)")
+#Session state to store cost options
+if 'cost_options' not in st.session_state:
+    st.session_state.cost_options = {}
 
-#Additional dynamic checkboxes
-additional_costs = {}
+#Function to add new cost option
+def add_cost_option():
+    option_type = st.session_state.option_type
+    if option_type == 'Free until X users':
+        x_users = st.number_input("Enter X Users", min_value=1, key='x_users')
+        cost = st.number_input("Enter Cost after X Users", min_value=0, key='cost')
+        condition = f"num_users > {x_users}"
+    elif option_type == 'Always Free':
+        cost = 0
+        condition = "True"
+    elif option_type == 'Paid':
+        cost = st.number_input("Enter Cost", min_value=0, key='paid_cost')
+        condition = "True"
 
-#Free until x users
-free_until = st.checkbox("Free until X Users then Cost")
-if free_until:
-    x_users = st.number_input("Enter X Users", min_value=1)
-    free_until_cost = st.number_input("Enter Cost after X Users", min_value=0)
-    additional_costs["Free until X Users"] = free_until_cost if num_users > x_users else 0 
-#Always Free
-always_free = st.checkbox("Always Free")
-if always_free:
-    additional_costs["Always Free"] = 0
+    st.session_state.cost_options[f"{option_type} - {st.session_state.new_option}"] = (condition, cost)
 
-#Paid
-paid_service = st.checkbox("Paid: Cost $400")
-if paid_service:
-    additional_costs["Paid Service"] = 400
+#Add new cost option
+with st.expander("Add New Cost Option"):
+    st.session_state.new_option = st.text_input("Option Name")
+    st.session_state.option_type = st.selectbox("Select Option Type", ["Free until X users", "Always Free", "Paid"])
+    st.button("Add Option", on_click=add_cost_option)
 
-#Combine all costs
-total_costs = {
-    "Database": 190 if database_paid else 0,
-    "Instances": 110 if num_users > 100 else 0,
-    "Hosting": 107,
-    "BitBucket": 18,
-    "Jira": 110 if jira_paid else 0,
-    "Dwolla": 200 if dwolla_upgrade else 0,
-    "Envestnet": 0 if num_users <= 100 else 500
-}
-total_costs.update(additional_costs)
+#Display cost options and calculate cost
+for name, (condition, cost) in st.session_state.cost_options.items():
+    st.checkbox(name, value=eval(condition), disabled=True)
 
-#Calculate cost per user
-cost_per_user = sum(total_costs.values()) / num_users if num_users > 0 else 0
-
-#Table to display enabled costs
-st.table(total_costs.items())
-
-#Display the calculated cost per user
-st.write(f"Cost per paid user: ${cost_per_user:.2f}")
+cost_per_user = calculate_cost(num_users, st.session_state.cost_options)
+st.write(f"Cost per user: ${cost_per_user:.2f}")
