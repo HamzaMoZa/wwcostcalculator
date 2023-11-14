@@ -67,22 +67,24 @@ def add_cost_option():
         x_users = st.number_input("Enter X Users", min_value=1, key='x_users')
         cost = st.number_input("Enter Cost after X Users", min_value=0, key='cost')
         condition = f"num_users > {x_users}"
+        if st.button("Add Option", key='add_option'):
+            total_costs[f"{option_type} - {st.session_state.new_option}"] = (condition, cost)
+            st.checkbox(f"{option_type} - {st.session_state.new_option}", value=eval(condition), disabled=True)
     elif option_type == 'Always Free':
         cost = 0
         condition = "True"
+        if st.button("Add Option", key='add_option'):
+            total_costs[f"{option_type} - {st.session_state.new_option}"] = (condition, cost)
     elif option_type == 'Paid':
         cost = st.number_input("Enter Cost", min_value=0, key='paid_cost')
         condition = "True"
-    if st.button("Add Option", key='add_option'):
-        total_costs[f"{option_type} - {st.session_state.new_option}"] = (condition, cost)
+        if st.button("Add Option", key='add_option'):
+            total_costs[f"{option_type} - {st.session_state.new_option}"] = (condition, cost)
 # Add new cost option
 with st.expander("Add New Cost Option"):
     st.session_state.new_option = st.text_input("Option Name")
     st.session_state.option_type = st.selectbox("Select Option Type", ["Free until X users", "Always Free", "Paid"])
     add_cost_option()
-# Display cost options and calculate cost
-for name, (condition, cost) in total_costs.items():
-    st.checkbox(name, value=eval(condition), disabled=True)
 cost_per_user = calculate_cost(num_users, total_costs)
 st.write(f"Cost per user: ${cost_per_user:.2f}")
 # Display costs in a table
