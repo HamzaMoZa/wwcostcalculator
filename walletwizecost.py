@@ -47,19 +47,12 @@ implicit_costs = {
 database_paid = st.checkbox("Database Paid ($190/month)")
 jira_paid = st.checkbox("Jira Paid ($110/month)")
 dwolla_upgrade = st.checkbox("Upgrade Dwolla to Paid ($200/month)")
-# Session state to store cost options
-if 'cost_options' not in st.session_state:
-    st.session_state.cost_options = {
-        "Database Paid": ("database_paid", 190 if database_paid else 0),
-        "Jira Paid": ("jira_paid", 110 if jira_paid else 0),
-        "Dwolla Upgrade": ("dwolla_upgrade", 200 if dwolla_upgrade else 0)
-    }
-# Update existing costs based on checkbox status
-st.session_state.cost_options["Database Paid"] = ("database_paid", 190 if database_paid else 0)
-st.session_state.cost_options["Jira Paid"] = ("jira_paid", 110 if jira_paid else 0)
-st.session_state.cost_options["Dwolla Upgrade"] = ("dwolla_upgrade", 200 if dwolla_upgrade else 0)
-# Combine implicit costs with session costs
-total_costs = {**implicit_costs, **st.session_state.cost_options}
+# Combine implicit costs with dynamic costs
+total_costs = {**implicit_costs}
+# Update existing costs
+total_costs["Database Paid"] = ("database_paid", 190 if database_paid else 0)
+total_costs["Jira Paid"] = ("jira_paid", 110 if jira_paid else 0)
+total_costs["Dwolla Upgrade"] = ("dwolla_upgrade", 200 if dwolla_upgrade else 0)
 # Function to add new cost option
 def add_cost_option():
     option_type = st.session_state.option_type
@@ -80,9 +73,7 @@ with st.expander("Add New Cost Option"):
     st.session_state.new_option = st.text_input("Option Name")
     st.session_state.option_type = st.selectbox("Select Option Type", ["Free until X users", "Always Free", "Paid"])
     add_cost_option()
-# Display cost options and calculate cost
-for name, (condition, cost) in total_costs.items():
-    st.checkbox(name, value=eval(condition), disabled=True)
+# Calculate cost per user
 cost_per_user = calculate_cost(num_users, total_costs)
 st.write(f"Cost per user: ${cost_per_user:.2f}")
 # Display costs in a table
