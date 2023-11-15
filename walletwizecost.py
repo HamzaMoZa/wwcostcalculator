@@ -34,47 +34,44 @@ def calculate_cost(num_users, cost_options):
     total_cost = sum(cost for condition, cost in cost_options.values() if eval(condition))
     return total_cost / num_users if num_users > 0 else 0
 st.title('Operational Expenditures Calculator')
+# Session state for dynamic cost options
+if 'dynamic_costs' not in st.session_state:
+    st.session_state.dynamic_costs = {}
 # Slider for number of users
 num_users = st.slider("Number of Users", 1, 20000, 1)
-# Implicit costs
-implicit_costs = {
+# Existing costs
+fixed_costs = {
+    "Database Paid": (f"database_paid", 190 if st.checkbox("Database Paid ($190/month)") else 0),
+    "Jira Paid": (f"jira_paid", 110 if st.checkbox("Jira Paid ($110/month)") else 0),
+    "Dwolla Upgrade": (f"dwolla_upgrade", 200 if st.checkbox("Upgrade Dwolla to Paid ($200/month)") else 0),
     "Instances": (f"num_users > 100", 110 if num_users > 100 else 0),
     "Hosting": ("True", 107),
     "BitBucket": ("True", 18),
     "Envestnet": (f"num_users > 100", 500 if num_users > 100 else 0)
 }
-# Existing checkboxes
-database_paid = st.checkbox("Database Paid ($190/month)")
-jira_paid = st.checkbox("Jira Paid ($110/month)")
-dwolla_upgrade = st.checkbox("Upgrade Dwolla to Paid ($200/month)")
-# Combine implicit costs with dynamic costs
-total_costs = {**implicit_costs}
-# Update existing costs
-total_costs["Database Paid"] = ("database_paid", 190 if database_paid else 0)
-total_costs["Jira Paid"] = ("jira_paid", 110 if jira_paid else 0)
-total_costs["Dwolla Upgrade"] = ("dwolla_upgrade", 200 if dwolla_upgrade else 0)
-# Function to add new cost option
-def add_cost_option():
-    option_type = st.session_state.option_type
+# Update dynamic costs
+def add_dynamic_cost(name, condition, cost):
+    st.session_state.dynamic_costs[name] = (condition, cost)
+# UI for adding new cost option
+with st.expander("Add New Cost Option"):
+    option_name = st.text_input("Option Name")
+    option_type = st.selectbox("Select Option Type", ["Free until X users", "Always Free", "Paid"])
     if option_type == 'Free until X users':
-        x_users = st.number_input("Enter X Users", min_value=1, key='x_users')
-        cost = st.number_input("Enter Cost after X Users", min_value=0, key='cost')
+        x_users = st.number_input("Enter X Users", min_value=1)
+        cost = st.number_input("Enter Cost after X Users", min_value=0)
         condition = f"num_users > {x_users}"
     elif option_type == 'Always Free':
         cost = 0
         condition = "True"
     elif option_type == 'Paid':
-        cost = st.number_input("Enter Cost", min_value=0, key='paid_cost')
+        cost = st.number_input("Enter Cost", min_value=0)
         condition = "True"
-    if st.button("Add Option", key='add_option'):
-        total_costs[f"{option_type} - {st.session_state.new_option}"] = (condition, cost)
-# Add new cost option
-with st.expander("Add New Cost Option"):
-    st.session_state.new_option = st.text_input("Option Name")
-    st.session_state.option_type = st.selectbox("Select Option Type", ["Free until X users", "Always Free", "Paid"])
-    add_cost_option()
+    if st.button("Add Option"):
+        add_dynamic_cost(f"{option_type} - {option_name}", condition, cost)
+# Combine fixed and dynamic costs
+total_costs = {**fixed_costs, **st.session_state.dynamic_costs}
 # Calculate cost per user
 cost_per_user = calculate_cost(num_users, total_costs)
 st.write(f"Cost per user: ${cost_per_user:.2f}")
-# Display costs in a table
+# Display costs
 st.table({name: cost for name, (_, cost) in total_costs.items()})
